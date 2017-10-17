@@ -96,7 +96,16 @@ void freeDisk(Disk disk){
 void changeBlockPointers(Disk disk, int index){
 	if(index == disk->numberOfFiles - 1){
 		freeBlockList(disk->blockTable[index]);
-		free(disk->blockTable[index]);
+		disk->blockTable = (DataIndex*)realloc(disk->blockTable, (size_t)(disk->numberOfFiles - 1)*sizeof(DataIndex));
+		(disk->numberOfFiles)-- ;
+	}else{
+		freeBlockList(disk->blockTable[index]);
+		while(index < disk->numberOfFiles-1){
+			disk->blockTable[index] = disk->blockTable[index+1];
+			index++;
+		}
+
+		disk->blockTable = (DataIndex*)realloc(disk->blockTable, (size_t)(disk->numberOfFiles - 1)*sizeof(DataIndex));
 		(disk->numberOfFiles)-- ;
 	}
 }
