@@ -11,27 +11,57 @@ int main(){
 		printf("3. Print contents\n");
 		printf("4. Print disk to file\n");
 		printf("5. Rename a file\n");
-		printf("6. Exit\n");
+		printf("6. Remove a file\n");
+		printf("7. Exit\n");
 		scanf("%d", &choice);
 
 		switch(choice){
-			case 1: 
+			case 1:
+				if(diskIsNull(disk)){
 				disk = allocateDisk();
+				}else{
+					freeDisk(disk);
+					disk = allocateDisk();
+				} 
 				break;
 			case 2:
-				addFile(disk);
+				if(diskIsNull(disk)){
+					printf("Please allocate a disk\n");
+				}else{
+					addFile(disk);
+				} 
 				break;
 			case 3:
-				printDiskInformation(disk);
+				if(diskIsNull(disk)){
+					printf("Please allocate a disk\n");
+				}else{
+					printDiskInformation(disk);
+				} 
 				break;
 			case 4:
-				printDiskToFile(disk);
+				if(diskIsNull(disk)){
+					printf("Please allocate a disk\n");
+				}else{
+					printDiskToFile(disk);
+				} 
 				break;
 			case 5:
-				renameFile(disk);
+				if(diskIsNull(disk)){
+					printf("Please allocate a disk\n");
+				}else{
+					renameFile(disk);
+				} 
 				break;
 			case 6:
-				freeDisk(disk);
+				if(diskIsNull(disk)){
+					printf("Please allocate a disk\n");
+				}else{
+					removeFile(disk);
+				} 
+				break;
+			case 7:
+				if(!diskIsNull(disk))
+					freeDisk(disk);
 				exit(0);
 
 			default:
