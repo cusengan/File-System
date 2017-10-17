@@ -77,6 +77,24 @@ void clearBlockTable(Disk disk){
 	free(disk->blockTable);
 }
 
+void renameFile(Disk disk){
+	char oldName[50];
+	char newName[50];
+	printf("Enter a file name to replace:\n");
+	scanf("%s", oldName);
+	printf("Enter the new file name:\n");
+	scanf("%s", newName);
+
+	for(int i = 0; i < disk->numberOfFiles; i++){
+		if(strcmp(oldName, disk->blockTable[i]->fileName) == 0){
+			strcpy(disk->blockTable[i]->fileName, newName);
+			return;
+		}
+	}
+
+	printf("File not found\n");
+}
+
 void loadDisk(){ //needs implementation
 
 }

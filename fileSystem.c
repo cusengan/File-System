@@ -10,7 +10,8 @@ int main(){
 		printf("2. Add a file\n");
 		printf("3. Print contents\n");
 		printf("4. Print disk to file\n");
-		printf("5. Exit\n");
+		printf("5. Rename a file\n");
+		printf("6. Exit\n");
 		scanf("%d", &choice);
 
 		switch(choice){
@@ -27,6 +28,9 @@ int main(){
 				printDiskToFile(disk);
 				break;
 			case 5:
+				renameFile(disk);
+				break;
+			case 6:
 				freeDisk(disk);
 				exit(0);
 
