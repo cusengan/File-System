@@ -23,6 +23,7 @@ struct FileNameTable {
 	char name[50];
 	uint32_t size;
 	uint32_t sizeFilled;
+	uint32_t sizeLeft;
 	int numberOfFiles;
 	DataIndex* blockTable; //array of pointers to block indexes
 
