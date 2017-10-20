@@ -12,6 +12,7 @@ struct BlockIndex {
 	int size;
 	char userName[50];
 	char* contents;
+	int startBit;
 	struct BlockIndex* next;
 
 };
@@ -37,11 +38,12 @@ int diskIsNull(Disk disk){
 }
 
 void allocateBlock(Disk disk){
-	int* index = &disk->numberOfFiles;
-	disk->blockTable = (DataIndex*)realloc(disk->blockTable, (size_t)(index+1)*sizeof(DataIndex));
+	// int* index = &disk->numberOfFiles;
+	// disk->blockTable = (DataIndex*)realloc(disk->blockTable, (size_t)(index+1)*sizeof(DataIndex));
 	disk->blockTable[*index] = (DataIndex)calloc(1, sizeof(struct BlockIndex));
 	disk->blockTable[*index]->size = ENTRY_SIZE;
 	disk->blockTable[*index]->contents = calloc(ENTRY_SIZE, sizeof(char));
+	disk->blockTable[*index]->startBit = 1;
 	disk->blockTable[*index]->next = NULL;
 	(disk->sizeFilled)+=ENTRY_SIZE;
 	(disk->sizeLeft)-=ENTRY_SIZE;
@@ -52,7 +54,10 @@ DataIndex appendBlock(Disk disk,DataIndex index){
 	(disk->sizeLeft)-= ENTRY_SIZE;
 	index->next = (DataIndex)calloc(1, sizeof(struct BlockIndex));
 	index->next->size = BLOCK_SIZE/4;
+	strcpy(index->next->fileName, index->fileName);
+	strcpy(index->next->userName, index->userName);
 	index->next->contents = calloc(ENTRY_SIZE, sizeof(char));
+	index->next->startBit = 0;
 	index->next->next = NULL;
 	return index->next;
 }
@@ -75,6 +80,14 @@ void freeBlockList(DataIndex index){
 		DataIndex next = index->next;
 		free(index->contents);
 		free(index);
+		index = next;
+	}
+}
+
+void printBlockList(DataIndex index){
+	while(index != NULL){
+		DataIndex next = index->next;
+		printf("%s\n", index->fileName );
 		index = next;
 	}
 }
@@ -186,7 +199,7 @@ void addFile(Disk disk){
 	FILE* fp;
 	int size;
 	if(disk->sizeFilled == disk->size){
-		printf("Disk is full\n");
+		printf("Not enough space on disk\n");
 		return;
 	}
 	int* index = &disk->numberOfFiles;
@@ -202,10 +215,6 @@ void addFile(Disk disk){
 	strcpy(disk->blockTable[*index]->fileName, buffer);
 	fseek(fp, 0, SEEK_END);//sets file pointer to a given offset
     size = ftell(fp);//finds size of a file
-    if(size > disk->size - disk->sizeFilled){
-    	printf("Not enough space on disk\n");
-    	return;
-    }
     fileToBlocks(disk, disk->blockTable[*index], fp);
 
 	strcpy(disk->blockTable[*index]->fileName, buffer);
@@ -232,7 +241,7 @@ Disk allocateDisk(){
 	disk->sizeLeft = numberOfBlock*BLOCK_SIZE;
 	disk->numberOfFiles = 0;
 	disk->sizeFilled = 0;
-	disk->blockTable = NULL; //allocating array of BlockTables
+	disk->blockTable = (DataIndex*)calloc(size/ENTRY_SIZE, sizeof(DataIndex)); //allocating array of BlockTables
 
 	return disk;
 }
