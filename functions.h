@@ -37,35 +37,67 @@ int diskIsNull(Disk disk){
 	else return 0;
 }
 
-void allocateBlock(Disk disk){
+DataIndex allocateBlock(Disk disk){
 	// int* index = &disk->numberOfFiles;
 	// disk->blockTable = (DataIndex*)realloc(disk->blockTable, (size_t)(index+1)*sizeof(DataIndex));
-	disk->blockTable[*index] = (DataIndex)calloc(1, sizeof(struct BlockIndex));
-	disk->blockTable[*index]->size = ENTRY_SIZE;
-	disk->blockTable[*index]->contents = calloc(ENTRY_SIZE, sizeof(char));
-	disk->blockTable[*index]->startBit = 1;
-	disk->blockTable[*index]->next = NULL;
+	DataIndex block = (DataIndex)calloc(1, sizeof(struct BlockIndex));
+	block->size = ENTRY_SIZE;
+	// block->fileName = (char*)calloc(50, sizeof(char));
+	block->contents = (char*)calloc(ENTRY_SIZE, sizeof(char));
+	block->startBit = 1;
+	block->next = NULL;
 	(disk->sizeFilled)+=ENTRY_SIZE;
 	(disk->sizeLeft)-=ENTRY_SIZE;
+	return block;
+}
+
+int findNULLPointer(Disk disk){
+	for(int i = 0; i*ENTRY_SIZE < disk->size; i++){
+		if(disk->blockTable[i] == NULL){
+			printf("%d\n", i);
+			return i;
+		} 
+	}
+
+	return -1;
 }
 
 DataIndex appendBlock(Disk disk,DataIndex index){
 	(disk->sizeFilled)+= ENTRY_SIZE;
 	(disk->sizeLeft)-= ENTRY_SIZE;
-	index->next = (DataIndex)calloc(1, sizeof(struct BlockIndex));
-	index->next->size = BLOCK_SIZE/4;
-	strcpy(index->next->fileName, index->fileName);
-	strcpy(index->next->userName, index->userName);
-	index->next->contents = calloc(ENTRY_SIZE, sizeof(char));
-	index->next->startBit = 0;
-	index->next->next = NULL;
-	return index->next;
+	int tableIndex = findNULLPointer(disk);
+	DataIndex block = (DataIndex)calloc(1, sizeof(struct BlockIndex));
+
+	index->next = block;
+	disk->blockTable[tableIndex] = block;
+
+	block->size = BLOCK_SIZE/4;
+	strcpy(block->fileName, index->fileName);
+	strcpy(block->userName, index->userName);
+	block->contents = calloc(ENTRY_SIZE, sizeof(char));
+	block->startBit = 0;
+	block->next = NULL;
+	return block;
 }
+
+int fileExists(Disk disk, char* fileName, char* userName){
+	for(int i = 0; i < disk->numberOfFiles; i++){
+		if(disk->blockTable[i] == NULL) continue;
+		if((strcmp(fileName, disk->blockTable[i]->fileName) == 0) && (strcmp(userName, disk->blockTable[i]->userName) == 0)){
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
 
 void fileToBlocks(Disk disk, DataIndex block, FILE* fp){
 	fseek(fp, 0, SEEK_SET);
 	int index = 0;
 	int ch;
+	int tableIndex = findNULLPointer(disk);
+	disk->blockTable[tableIndex] = block;
 	while((ch = fgetc(fp)) != EOF){
 		if(index == ENTRY_SIZE){
 			block = appendBlock(disk, block);
@@ -92,11 +124,24 @@ void printBlockList(DataIndex index){
 	}
 }
 
+void setNullPointers(Disk disk, char* fileName){
+	for(int i = 0; i*ENTRY_SIZE < disk->size; i++){
+		if(disk->blockTable[i] == NULL) continue;
+		if(strcmp(disk->blockTable[i]->fileName, fileName) == 0){
+			disk->blockTable[i] = NULL;
+		}
+	}
+}
+
 
 void clearBlockTable(Disk disk){
 	int size = disk->numberOfFiles;
-	for(int i = 0; i < size; i++){
-		freeBlockList(disk->blockTable[i]);
+	for(int i = 0; i*ENTRY_SIZE < disk->size; i++){
+		if(disk->blockTable[i] == NULL) continue;
+		DataIndex block = disk->blockTable[i];
+		setNullPointers(disk, disk->blockTable[i]->fileName);
+
+		freeBlockList(block);
 	}
 }
 
@@ -106,54 +151,52 @@ void freeDisk(Disk disk){
 	free(disk);
 }
 
-void changeBlockPointers(Disk disk, int index){
-	if(index == disk->numberOfFiles - 1){
-		freeBlockList(disk->blockTable[index]);
-		disk->blockTable = (DataIndex*)realloc(disk->blockTable, (size_t)(disk->numberOfFiles - 1)*sizeof(DataIndex));
-		(disk->numberOfFiles)-- ;
-	}else{
-		freeBlockList(disk->blockTable[index]);
-		while(index < disk->numberOfFiles-1){
-			disk->blockTable[index] = disk->blockTable[index+1];
-			index++;
-		}
-
-		disk->blockTable = (DataIndex*)realloc(disk->blockTable, (size_t)(disk->numberOfFiles - 1)*sizeof(DataIndex));
-		(disk->numberOfFiles)-- ;
-	}
-}
-
 void removeFile(Disk disk){
 	char fileName[50];
+	char userName[50];
 	printf("Enter a file name to remove:\n");
 	scanf("%s", fileName);
-	for(int i = 0; i < disk->numberOfFiles; i++){
-		if(strcmp(fileName, disk->blockTable[i]->fileName) == 0){
-			changeBlockPointers(disk, i);
-			return;
+	printf("Enter the owner of the file:\n");
+	scanf("%s", userName);
+	DataIndex block = NULL;
+	int flag = 1;
+	for(int i = 0; i*ENTRY_SIZE < disk->size; i++){
+		if(disk->blockTable[i] == NULL) continue;
+		if((strcmp(fileName, disk->blockTable[i]->fileName) == 0) && (strcmp(userName, disk->blockTable[i]->userName) == 0)){
+			if(flag){
+				block = disk->blockTable[i];
+				flag = 0;
+			}
+			disk->blockTable[i] = NULL;
+
 		}
 	}
 
-	printf("File not found\n");
+	if(block!= NULL)
+		freeBlockList(block);
 
 }
 
 void renameFile(Disk disk){
 	char oldName[50];
 	char newName[50];
+	char userName[50];
 	printf("Enter a file name to replace:\n");
 	scanf("%s", oldName);
+	printf("Enter the owner of the file:\n");
+	scanf("%s", userName);
 	printf("Enter the new file name:\n");
 	scanf("%s", newName);
 
-	for(int i = 0; i < disk->numberOfFiles; i++){
-		if(strcmp(oldName, disk->blockTable[i]->fileName) == 0){
+	for(int i = 0; i*ENTRY_SIZE < disk->size; i++){
+		if(disk->blockTable[i] == NULL) continue;
+
+		if((strcmp(oldName, disk->blockTable[i]->fileName) == 0) && (strcmp(userName, disk->blockTable[i]->userName) == 0)) {
 			strcpy(disk->blockTable[i]->fileName, newName);
-			return;
 		}
 	}
 
-	printf("File not found\n");
+	
 }
 
 void loadDisk(){ //needs implementation
@@ -178,7 +221,8 @@ void printDiskToFile(Disk disk){ //needs implementation
 
 void printFileNames(Disk disk){
 	int size = disk->numberOfFiles;
-	for(int i = 0; i < size; i++){
+	for(int i = 0; i*ENTRY_SIZE < disk->size; i++){
+		if(disk->blockTable[i] == NULL) continue;
 		printf("File Name-%s\n", disk->blockTable[i]->fileName);
 		printf("User Name-%s\n\n", disk->blockTable[i]->userName);
 	}
@@ -193,17 +237,18 @@ void printDiskInformation(Disk disk){
 	printFileNames(disk);
 }
 
+void extractFile(Disk disk){
+
+}
+
 
 
 void addFile(Disk disk){
 	FILE* fp;
 	int size;
-	if(disk->sizeFilled == disk->size){
-		printf("Not enough space on disk\n");
-		return;
-	}
-	int* index = &disk->numberOfFiles;
+	// int* index = &disk->numberOfFiles;
 	char buffer[50];
+	char buffer2[50];
 	printf("Enter a file name:\n");
 	scanf("%s", buffer);
 	fp = fopen(buffer, "r");
@@ -211,16 +256,29 @@ void addFile(Disk disk){
 		printf("File not found\n");
 		return;
 	}
-	allocateBlock(disk);
-	strcpy(disk->blockTable[*index]->fileName, buffer);
+
+	printf("Enter a user name:\n");
+	scanf("%s", buffer2);
+	if(fileExists(disk, buffer, buffer2)){
+		printf("File already exits\n");
+		return;
+	}
+
 	fseek(fp, 0, SEEK_END);//sets file pointer to a given offset
     size = ftell(fp);//finds size of a file
-    fileToBlocks(disk, disk->blockTable[*index], fp);
+    if(size > disk->sizeLeft){
+		printf("Not enough space on disk\n");
+		return;
+	}
+	
+	DataIndex block = allocateBlock(disk);
+	strcpy(block->fileName, buffer);
+	
+	strcpy(block->userName, buffer2);
+    fileToBlocks(disk, block, fp);
 
-	strcpy(disk->blockTable[*index]->fileName, buffer);
-	printf("Enter a user name:\n");
-	scanf("%s", disk->blockTable[*index]->userName);
-	(*index)++;
+	strcpy(block->fileName, buffer);
+	(disk->numberOfFiles)++;
     fclose(fp);
 }
 
@@ -241,7 +299,11 @@ Disk allocateDisk(){
 	disk->sizeLeft = numberOfBlock*BLOCK_SIZE;
 	disk->numberOfFiles = 0;
 	disk->sizeFilled = 0;
-	disk->blockTable = (DataIndex*)calloc(size/ENTRY_SIZE, sizeof(DataIndex)); //allocating array of BlockTables
+	disk->blockTable = (DataIndex*)calloc(disk->size/ENTRY_SIZE, sizeof(DataIndex)); //allocating array of BlockTables
+	for(int i = 0; i*ENTRY_SIZE < disk->size; i++){
+		disk->blockTable[i] = NULL;
+		// printf("%d\n", i);
+	}
 
 	return disk;
 }

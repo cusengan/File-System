@@ -8,11 +8,12 @@ int main(){
 	while(1){
 		printf("1: Allocate a disk\n");
 		printf("2. Add a file\n");
-		printf("3. Print contents\n");
-		printf("4. Print disk to file\n");
-		printf("5. Rename a file\n");
-		printf("6. Remove a file\n");
-		printf("7. Exit\n");
+		printf("3. Extract a file\n");
+		printf("4. Print contents\n");
+		printf("5. Print disk to file\n");
+		printf("6. Rename a file\n");
+		printf("7. Remove a file\n");
+		printf("8. Exit\n");
 		scanf("%d", &choice);
 
 		switch(choice){
@@ -32,34 +33,37 @@ int main(){
 				} 
 				break;
 			case 3:
+
+				break;
+			case 4:
 				if(diskIsNull(disk)){
 					printf("Please allocate a disk\n");
 				}else{
 					printDiskInformation(disk);
 				} 
 				break;
-			case 4:
+			case 5:
 				if(diskIsNull(disk)){
 					printf("Please allocate a disk\n");
 				}else{
 					printDiskToFile(disk);
 				} 
 				break;
-			case 5:
+			case 6:
 				if(diskIsNull(disk)){
 					printf("Please allocate a disk\n");
 				}else{
 					renameFile(disk);
 				} 
 				break;
-			case 6:
+			case 7:
 				if(diskIsNull(disk)){
 					printf("Please allocate a disk\n");
 				}else{
 					removeFile(disk);
 				} 
 				break;
-			case 7:
+			case 8:
 				if(!diskIsNull(disk))
 					freeDisk(disk);
 				exit(0);
