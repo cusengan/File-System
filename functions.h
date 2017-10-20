@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 #define BLOCK_SIZE 512
-#define ENTRY_SIZE 10
+#define ENTRY_SIZE 128
 
 struct BlockIndex {
 	char fileName[50];
@@ -183,6 +183,8 @@ void removeFile(Disk disk){
 				block = disk->blockTable[i];
 				flag = 0;
 			}
+			(disk->sizeFilled)-=ENTRY_SIZE;
+			(disk->sizeLeft)+=ENTRY_SIZE;
 			disk->blockTable[i] = NULL;
 
 		}
@@ -338,7 +340,7 @@ void addFile(Disk disk){
 
 	strcpy(block->fileName, buffer);
 	(disk->numberOfFiles)++;
-	printFileContents(block);
+	// printFileContents(block);
     fclose(fp);
 }
 
