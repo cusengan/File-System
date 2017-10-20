@@ -33,7 +33,12 @@ int main(){
 				} 
 				break;
 			case 3:
-
+				if (diskIsNull(disk))
+				{
+					printf("Please allocate a disk\n");
+				}else{
+					extractFile(disk);
+				}
 				break;
 			case 4:
 				if(diskIsNull(disk)){

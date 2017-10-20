@@ -90,6 +90,17 @@ int fileExists(Disk disk, char* fileName, char* userName){
 	return 0;
 }
 
+DataIndex findHead(Disk disk, char* fileName, char* userName){
+	for(int i = 0; i < disk->numberOfFiles; i++){
+		if(disk->blockTable[i] == NULL) continue;
+		if((strcmp(fileName, disk->blockTable[i]->fileName) == 0) && (strcmp(userName, disk->blockTable[i]->userName) == 0)){
+			return disk->blockTable[i];
+		}
+	}
+
+	return NULL;
+}
+
 
 
 void fileToBlocks(Disk disk, DataIndex block, FILE* fp){
@@ -134,6 +145,7 @@ void setNullPointers(Disk disk, char* fileName){
 }
 
 
+
 void clearBlockTable(Disk disk){
 	int size = disk->numberOfFiles;
 	for(int i = 0; i*ENTRY_SIZE < disk->size; i++){
@@ -159,6 +171,10 @@ void removeFile(Disk disk){
 	printf("Enter the owner of the file:\n");
 	scanf("%s", userName);
 	DataIndex block = NULL;
+	if(fileExists(disk, fileName, userName) == 0){
+		printf("File does not exit\n");
+		return;
+	}
 	int flag = 1;
 	for(int i = 0; i*ENTRY_SIZE < disk->size; i++){
 		if(disk->blockTable[i] == NULL) continue;
@@ -175,6 +191,7 @@ void removeFile(Disk disk){
 	if(block!= NULL)
 		freeBlockList(block);
 
+	(disk->numberOfFiles)--;
 }
 
 void renameFile(Disk disk){
@@ -188,6 +205,11 @@ void renameFile(Disk disk){
 	printf("Enter the new file name:\n");
 	scanf("%s", newName);
 
+	if(fileExists(disk, oldName, userName) == 0){
+		printf("File does not exit\n");
+		return;
+	}
+
 	for(int i = 0; i*ENTRY_SIZE < disk->size; i++){
 		if(disk->blockTable[i] == NULL) continue;
 
@@ -200,7 +222,7 @@ void renameFile(Disk disk){
 }
 
 void loadDisk(){ //needs implementation
-
+	
 }
 
 void printDiskToFile(Disk disk){ //needs implementation
@@ -238,7 +260,44 @@ void printDiskInformation(Disk disk){
 }
 
 void extractFile(Disk disk){
+	FILE* fp;
+	char fileName[50];
+	char userName[50];
+	char buffer[50];
+	printf("Enter a file name to extract:\n");
+	scanf("%s", fileName);
+	printf("Enter the owner of the file:\n");
+	scanf("%s", userName);
+	DataIndex block = NULL;
+	if(fileExists(disk, fileName, userName) == 0){
+		printf("File does not exit\n");
+		return;
+	}
+	printf("Enter a file name to save your disk:\n");
+	scanf("%s", buffer);
+	fp = fopen(buffer, "w");
+	if(fp == NULL){
+		printf("Cannot write to file\n");
+		return;
+	}
 
+	block = findHead(disk, fileName, userName);
+	while(block != NULL){
+		DataIndex next = block->next;
+		fwrite(block->contents, 1, ENTRY_SIZE, fp);
+		block = next;
+	}
+
+
+	fclose(fp);
+}
+
+void printFileContents(DataIndex index){
+	while(index != NULL){
+		DataIndex next = index->next;
+		printf("%s", index->contents);
+		index = next;
+	}
 }
 
 
@@ -279,6 +338,7 @@ void addFile(Disk disk){
 
 	strcpy(block->fileName, buffer);
 	(disk->numberOfFiles)++;
+	printFileContents(block);
     fclose(fp);
 }
 
