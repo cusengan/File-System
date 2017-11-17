@@ -46,6 +46,7 @@ struct FileNameTable {
 	int numberOfFiles;
 	int maxNumberOfFiles;
 	int maxFileSize;
+	bitmap_t bitMap;
 	DataIndex* blockTable; //array of pointers to block indexes
 	
 
