@@ -17,6 +17,24 @@ struct BlockIndex {
 
 };
 
+typedef unsigned char* bitmap_t;
+
+void set_bitmap(bitmap_t b, int i) {
+    b[i / 8] |= 1 << (i & 7);
+}
+
+void unset_bitmap(bitmap_t b, int i) {
+    b[i / 8] &= ~(1 << (i & 7));
+}
+
+int get_bitmap(bitmap_t b, int i) {
+    return b[i / 8] & (1 << (i & 7)) ? 1 : 0;
+}
+
+bitmap_t create_bitmap(int n) {
+    return malloc((n + 7) / 8);
+}
+
 typedef struct BlockIndex* DataIndex;
 
 
@@ -26,7 +44,11 @@ struct FileNameTable {
 	uint32_t sizeFilled;
 	uint32_t sizeLeft;
 	int numberOfFiles;
+	int maxNumberOfFiles;
+	int maxFileSize;
 	DataIndex* blockTable; //array of pointers to block indexes
+	
+
 
 };
 
@@ -54,11 +76,7 @@ DataIndex allocateBlock(Disk disk){
 int findNULLPointer(Disk disk){
 	for(int i = 0; i*ENTRY_SIZE < disk->size; i++){
 		if(disk->blockTable[i] == NULL){
-<<<<<<< HEAD
 			//printf("%d\n", i);
-=======
-			printf("%d\n", i);
->>>>>>> 884c47f708a181cef2a86b77c4d096b199ce885d
 			return i;
 		} 
 	}
@@ -262,6 +280,8 @@ void printDiskInformation(Disk disk){
 	printf("Disk size filled-%d\n", disk->sizeFilled );
 	printf("Disk size left-%d\n\n", disk->sizeLeft);
 	printf("Files on disk:\n");
+	printf("Max number of files: %d\n", disk->maxNumberOfFiles);
+	printf("Max number of table entries: %d\n\n", disk->maxFileSize);
 	printFileNames(disk);
 }
 
@@ -331,7 +351,7 @@ void addFile(Disk disk){
 
 	fseek(fp, 0, SEEK_END);//sets file pointer to a given offset
     size = ftell(fp);//finds size of a file
-    if(size > disk->sizeLeft){
+    if(size > disk->sizeLeft || size > disk->maxFileSize || disk->numberOfFiles == disk->maxNumberOfFiles){
 		printf("Not enough space on disk\n");
 		return;
 	}
@@ -370,6 +390,8 @@ Disk allocateDisk(){
 		disk->blockTable[i] = NULL;
 		// printf("%d\n", i);
 	}
+	disk->maxNumberOfFiles = 0;
+	disk->maxFileSize = 0;
 
 	return disk;
 }
@@ -379,8 +401,11 @@ void formatDisk(Disk disk){
 	int tableEntries;
 	printf("Enter number of files\n");
 	scanf("%d", &numberOfFiles);
-	printf("Enter nubmer of table entries\n");
+	printf("Enter number of table entries\n");
 	scanf("%d", &tableEntries);
+	disk->maxNumberOfFiles = numberOfFiles;
+	disk->maxFileSize = ENTRY_SIZE*tableEntries;
+	clearBlockTable(disk);
 	
 }
 
