@@ -54,7 +54,11 @@ DataIndex allocateBlock(Disk disk){
 int findNULLPointer(Disk disk){
 	for(int i = 0; i*ENTRY_SIZE < disk->size; i++){
 		if(disk->blockTable[i] == NULL){
+<<<<<<< HEAD
 			//printf("%d\n", i);
+=======
+			printf("%d\n", i);
+>>>>>>> 884c47f708a181cef2a86b77c4d096b199ce885d
 			return i;
 		} 
 	}
